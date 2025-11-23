@@ -1,12 +1,14 @@
-package application;
+package br.com.queli.application;
 
+import br.com.queli.domain.model.Marca;
+import br.com.queli.infra.client.FipeClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import domain.model.Marca;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import java.util.List;
 
 @ApplicationScoped
 public class CargaService {
@@ -15,7 +17,7 @@ public class CargaService {
     FipeClient fipeClient;
 
     @Inject
-    @Channel("marcas-out") // [cite: 9]
+    @Channel("marcas-out")
     Emitter<String> marcaEmitter;
 
     @Inject
@@ -23,15 +25,15 @@ public class CargaService {
 
     public void executarCargaInicial() {
         List<Marca> marcas = fipeClient.buscarMarcas();
-
-        // Envia uma por uma para a fila para processamento assíncrono
-        marcas.forEach(marca -> {
-            try {
-                String json = mapper.writeValueAsString(marca);
-                marcaEmitter.send(json);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        if (marcas != null) {
+            marcas.forEach(marca -> {
+                try {
+                    String json = mapper.writeValueAsString(marca);
+                    marcaEmitter.send(json);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        }
     }
 }
