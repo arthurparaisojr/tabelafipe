@@ -1,42 +1,62 @@
-# Sistema Integrado Tabela FIPE (Microservices)
+# 🚗 Sistema de Integração Tabela FIPE (Microservices)
 
-Este projeto implementa um sistema distribuído para consulta e processamento da Tabela FIPE, utilizando arquitetura de microsserviços, mensageria assíncrona e bancos de dados relacionais, tudo containerizado com Docker.
+Este projeto implementa uma solução distribuída para consultar, processar e armazenar dados da Tabela FIPE. Utiliza arquitetura de microsserviços com **Java 21**, **Quarkus**, **RabbitMQ** e **PostgreSQL**, totalmente orquestrado via **Docker**.
 
-## 📋 Estrutura do Projeto
+---
 
-O sistema é composto por 4 containers principais:
+## 🏗️ Arquitetura e Componentes
 
-1.  **api-1**: Responsável pela carga inicial (busca marcas na FIPE) e exposição dos dados via REST.
-2.  **api-2**: Worker que consome mensagens da fila, busca detalhes (modelos) na FIPE e salva no banco.
-3.  **rabbitmq**: Broker de mensageria para comunicação assíncrona entre API-1 e API-2.
-4.  **postgres-db**: Banco de dados relacional para persistência dos veículos.
+O sistema é composto por 4 containers que conversam entre si:
 
-## 🔐 Credenciais e Acessos
+1.  **API-1 (Orquestrador & Gateway)**
+    * **Função:** É a porta de entrada. Recebe requisições REST do usuário.
+    * **Responsabilidade:** Busca a lista de *Marcas* na FIPE e envia para a fila RabbitMQ. Expõe dados para consulta.
+    * **Porta:** `8081`
 
-Conforme solicitado, abaixo estão os usuários e senhas configurados no ambiente Docker.
+2.  **API-2 (Worker & Processador)**
+    * **Função:** "Chão de fábrica". Processamento assíncrono.
+    * **Responsabilidade:** Consome mensagens da fila, busca os *Modelos* detalhados na FIPE e salva no Banco de Dados.
+    * **Porta:** `8082`
 
-| Serviço | Tipo | Usuário | Senha | Porta Externa |
+3.  **RabbitMQ (Mensageria)**
+    * **Função:** Garante a comunicação desacoplada entre API-1 e API-2.
+    * **Portas:** `5672` (AMQP) e `15672` (Painel Web).
+
+4.  **PostgreSQL (Banco de Dados)**
+    * **Função:** Persistência dos veículos processados.
+    * **Porta:** `5432`
+
+---
+
+## 🔐 Credenciais de Acesso
+
+Utilize estas credenciais configuradas no `docker-compose.yaml` para acessar os serviços:
+
+| Serviço | Tipo de Acesso | Usuário | Senha | URL / Host |
 | :--- | :--- | :--- | :--- | :--- |
-| **PostgreSQL** | Banco de Dados | `usrdb` | `pwd123` | `5432` |
-| **RabbitMQ** | Fila / Admin UI | `usrtf` | `pwdtf` | `5672` (App) / `15672` (Web) |
-| **API-1** | Swagger / REST | - | - | `8081` |
-| **API-2** | Swagger / REST | - | - | `8082` |
+| **PostgreSQL** | Banco de Dados | `usrdb` | `pwd123` | `localhost:5432` |
+| **RabbitMQ** | Painel Web | `usrtf` | `pwdtf` | [http://localhost:15672](http://localhost:15672) |
+| **API-1** | Swagger UI | - | - | [http://localhost:8081/q/swagger-ui/](http://localhost:8081/q/swagger-ui/) |
 
-> **Nota:** As APIs Java conectam-se automaticamente usando estas credenciais através das variáveis de ambiente definidas no `docker-compose.yaml`.
+> **Nota:** Se o Swagger der erro 404, verifique se colocou a barra `/` no final da URL.
 
-## 🚀 Como gerar e rodar o YAML
+---
 
-O arquivo `docker-compose.yaml` é a "receita" que diz ao Docker como criar tudo. Você não precisa compilar este arquivo, apenas criá-lo.
+## 🚀 Como Executar o Projeto (Passo a Passo)
 
-### Passo 1: Criar o arquivo
-Crie um arquivo chamado `docker-compose.yaml` na raiz do projeto e cole o conteúdo fornecido na documentação do projeto (seção anterior).
+Como o projeto usa Java, precisamos gerar os executáveis (`.jar`) antes de criar os containers Docker.
 
-### Passo 2: Gerar os executáveis Java
-Antes de subir os containers, você precisa gerar os arquivos `.jar` das aplicações Quarkus. Na raiz de cada pasta (`api-1` e `api-2`), execute:
+### 1. Compilar as Aplicações
+Abra seu terminal na raiz do projeto e execute:
 
-```bash
-# Na pasta api-1/
-./mvnw package -DskipTests
+```powershell
+# 1. Compilar API-1
+cd api-1
+mvn clean package -DskipTests
 
-# Na pasta api-2/
-./mvnw package -DskipTests
+# 2. Compilar API-2
+cd ..\api-2
+mvn clean package -DskipTests
+
+# 3. Voltar para a raiz
+cd ..
