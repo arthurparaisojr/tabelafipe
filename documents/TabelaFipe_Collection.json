@@ -1,0 +1,54 @@
+{
+	"info": {
+		"_postman_id": "e6b7b2d5-5b4a-4b5e-8b0a-9b9b9b9b9b9b",
+		"name": "Tabela FIPE - Testes",
+		"description": "Collection para validar o fluxo de integração do sistema Tabela FIPE (Orquestrador + Worker).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Iniciar Carga (API-1)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/carga",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"carga"
+					]
+				},
+				"description": "Dispara o processo de carga. A API-1 busca marcas na FIPE e envia para o RabbitMQ."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Consultar Veículos (API-1)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/veiculos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"veiculos"
+					]
+				},
+				"description": "Consulta os veículos processados e salvos no PostgreSQL pela API-2."
+			},
+			"response": []
+		}
+	]
+}

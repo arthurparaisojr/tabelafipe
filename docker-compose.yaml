@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  postgres-db:
+      image: postgres:15
+      container_name: fipe-postgres
+      environment:
+        POSTGRES_DB: fipe_db
+        POSTGRES_USER: usrdb
+        POSTGRES_PASSWORD: pwd123
+      ports:
+        - "5432:5432"
+      volumes:
+        - ./db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      networks:
+        - fipe-net
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U usrdb -d fipe_db"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fipe-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: usrtf
+      RABBITMQ_DEFAULT_PASS: pwdtf
+    networks:
+      - fipe-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-1:
+    container_name: fipe-api-1
+    build:
+      context: ./api-1
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8081:8081"
+    environment:
+      QUARKUS_SWAGGER_UI_ALWAYS_INCLUDE: "true"
+      
+      RABBITMQ_HOST: fipe-rabbitmq
+      RABBITMQ_USER: usrtf
+      RABBITMQ_PASSWORD: pwdtf
+      DB_HOST: fipe-postgres
+      DB_USER: usrdb
+      DB_PASS: pwd123
+    networks:
+      - fipe-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+  api-2:
+    container_name: fipe-api-2
+    build:
+      context: ./api-2
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8082:8082"
+    environment:
+      QUARKUS_SWAGGER_UI_ALWAYS_INCLUDE: "true"
+
+      RABBITMQ_HOST: fipe-rabbitmq
+      RABBITMQ_USER: usrtf
+      RABBITMQ_PASSWORD: pwdtf
+      DB_HOST: fipe-postgres
+      DB_USER: usrdb
+      DB_PASS: pwd123
+    networks:
+      - fipe-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+networks:
+  fipe-net:
+    driver: bridge
