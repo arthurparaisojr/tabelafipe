@@ -60,3 +60,22 @@ mvn clean package -DskipTests
 
 # 3. Voltar para a raiz
 cd ..
+
+
+```docker
+
+# 1. Derruba os containers e APAGA os dados do banco (-v)
+docker-compose down -v
+
+# 2. Sobe tudo de novo (vai recriar o banco e rodar o script novo)
+docker-compose up --build -d
+
+
+---
+
+
+# 🧪 Como Testar
+
+Para instruções detalhadas de como validar o fluxo de integração, disparar a carga e monitorar o RabbitMQ, consulte o nosso guia de testes:
+
+👉 **[📄 Leia o Guia de Testes Completo](documents/ComoTestar.md)**
