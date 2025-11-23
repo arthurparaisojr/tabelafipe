@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15
+    container_name: fipe-postgres
+    environment:
+      POSTGRES_DB: fipe_db
+      POSTGRES_USER: usrdb       # Solicitado
+      POSTGRES_PASSWORD: pwd123  # Solicitado
+    ports:
+      - "5432:5432"
+    networks:
+      - fipe-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usrdb -d fipe_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fipe-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: usrtf  # Solicitado (Outros)
+      RABBITMQ_DEFAULT_PASS: pwdtf  # Solicitado
+    networks:
+      - fipe-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-1:
+    container_name: fipe-api-1
+    build:
+      context: ./api-1
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8081:8080"
+    environment:
+      # Conexão RabbitMQ
+      QUARKUS_RABBITMQ_HOST: fipe-rabbitmq
+      QUARKUS_RABBITMQ_PORT: 5672
+      QUARKUS_RABBITMQ_USERNAME: usrtf
+      QUARKUS_RABBITMQ_PASSWORD: pwdtf
+      # Conexão Banco
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://fipe-postgres:5432/fipe_db
+      QUARKUS_DATASOURCE_USERNAME: usrdb
+      QUARKUS_DATASOURCE_PASSWORD: pwd123
+    networks:
+      - fipe-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+  api-2:
+    container_name: fipe-api-2
+    build:
+      context: ./api-2
+      dockerfile: src/main/docker/Dockerfile.jvm
+    ports:
+      - "8082:8080"
+    environment:
+      # Conexão RabbitMQ
+      QUARKUS_RABBITMQ_HOST: fipe-rabbitmq
+      QUARKUS_RABBITMQ_PORT: 5672
+      QUARKUS_RABBITMQ_USERNAME: usrtf
+      QUARKUS_RABBITMQ_PASSWORD: pwdtf
+      # Conexão Banco
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://fipe-postgres:5432/fipe_db
+      QUARKUS_DATASOURCE_USERNAME: usrdb
+      QUARKUS_DATASOURCE_PASSWORD: pwd123
+    networks:
+      - fipe-net
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-db:
+        condition: service_healthy
+
+networks:
+  fipe-net:
+    driver: bridge
